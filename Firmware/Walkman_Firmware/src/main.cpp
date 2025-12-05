@@ -14,16 +14,20 @@ int pausebutton = 27;
 int downbutton = 13;
 int TotalTime = 195;
 int PassedTime = 0;
-int recount = 0;
+int menucounter = 0;
+int trackselectindex = 0;
 unsigned long lastcheck = 0;
 unsigned long screenupdate = 0;
 unsigned char playerstate;
+File root;
 //const char* SSID; //Remove before pushing pls
 //const char* PASSWORD; //Remove before pushing pls
 //const char* ntpserver = "pool.ntp.org";
 //const long gmtoffset = 19800;
 //const long daylightoffset = 0;
-enum {home, song, tracks, stopped};
+//int recount = 0;
+enum {home, song, tracks, stopped, settingsmenu};
+
 
 void setup() {
   Serial.begin(115200);
@@ -74,14 +78,20 @@ void setup() {
 
 void timekeeper();
 void trackselector();
-void datetime();
+void playersettings();
+//void datetime();
 
 void homescreen() {
+  if(digitalRead(downbutton) == HIGH){
+    while(digitalRead(downbutton) == HIGH);
+    menucounter = !menucounter;
+  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
   display.println(F("WiFi Stack Disabled"));
+  if(menucounter == 0){
   display.fillCircle(4, 18, 2, WHITE);
   display.setCursor(10,15);
   display.println(F("View Library"));
@@ -89,6 +99,16 @@ void homescreen() {
   display.setCursor(10, 24);
   display.println(F("Settings"));
   display.display();
+  } 
+  else {
+  display.drawCircle(4, 18, 2, WHITE);
+  display.setCursor(10,15);
+  display.println(F("View Library"));
+  display.fillCircle(4, 27, 2, WHITE);
+  display.setCursor(10, 24);
+  display.println(F("Settings"));
+  display.display();
+  }
   }
 
 void updatescreen() {
@@ -139,8 +159,7 @@ void updatescreen() {
 
 }*/
 
-void paused() {
-}
+void paused() {}
 
 void timekeeper() {
   if(millis() - lastcheck > 1000) {
@@ -158,23 +177,65 @@ void timekeeper() {
   }
 
 void trackselector() {
-  display.clearDisplay();
-  display.setTextSize(3);
-  display.setCursor(0,0);
-  display.println(F("Track 1"));
-  display.setCursor(0,30);
-  display.println(F("Track 2"));
-  display.display();
+  int count = 0;
+  File root = SD.open("/");
+  if(!root){
+    display.println(F("SD Card Error"));
+    display.display();
+    return;
   }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println(F("Your Tracks: "));
+  root.rewindDirectory();
+  while (true){
+    File entry = root.openNextFile();
+    if(!entry){
+      break;
+    }
+   if(entry.isDirectory()){
+    entry.close();
+    continue;
+   }
+  String name = entry.name();
+  if (name.length() > 20){
+    name = name.substring(0, 17) + "...";
+  }
+  display.setTextSize(1);
+  display.println(name);
+  entry.close();
+  count++;
+  if (count >= 5){
+    break;
+   }
+  }
+  display.display();
+}
+
+void playersettings(){
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println(F("Placeholder"));
+  display.display();
+}
 
 void loop() {
   switch(playerstate){
     case home:
     homescreen();
-    if(digitalRead(selectbutton) == HIGH){
+    if(digitalRead(selectbutton) == HIGH && menucounter == 0){
       while(digitalRead(selectbutton) == HIGH);
       delay(100);
       playerstate = tracks;
+      break;
+    }
+    else if(digitalRead(selectbutton) == HIGH && menucounter == 1){
+      while(digitalRead(selectbutton) == HIGH);
+      delay(100);
+      playerstate = settingsmenu;
       break;
     }
     else{
@@ -227,6 +288,17 @@ void loop() {
         delay(100);
         playerstate = tracks;
       break;
+    }
+    else{
+      break;
+    }
+    case settingsmenu:
+    playersettings();
+    if(digitalRead(backbutton) == HIGH){
+     while(digitalRead(backbutton) == HIGH);
+     delay(100);
+     playerstate = home;
+     break;
     }
     else{
       break;

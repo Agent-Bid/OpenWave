@@ -4,8 +4,14 @@
 #include <Adafruit_SSD1306.h>
 #include <SPI.h>
 #include <SD.h>
+#include <secrets.h>
+#include <WiFi.h>
+#include <time.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeMono9pt7b.h>
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 int selectbutton = 25;
@@ -17,23 +23,27 @@ int PassedTime = 0;
 int menucounter = 0;
 int settingscounter = 0;
 int tracksfound = 0;
-String tracklist[50];
 int trackselectindex = 0;
+bool wifirequest;
+String tracklist[50];
 unsigned long lastcheck = 0;
 unsigned long screenupdate = 0;
+const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
 File root;
-//const char* SSID; //Remove before pushing pls
-//const char* PASSWORD; //Remove before pushing pls
-//const char* ntpserver = "pool.ntp.org";
-//const long gmtoffset = 19800;
-//const long daylightoffset = 0;
-//int recount = 0;
+const char* ntpserver = "pool.ntp.org";
+const long gmtoffset = 19800;
+const long daylightoffset = 0;
 enum {home, song, tracks, stopped, settingsmenu};
 
+void timekeeper();
+void trackselector();
+void playersettings();
+void populatetracklist();
+void networkmanager(void * parameter);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("Display Not Found"));
     for(;;);
@@ -53,39 +63,15 @@ void setup() {
     display.display();
     for(;;);
   }
-  /*display.println(F("Connecting to WiFi"));
-  WiFi.begin(SSID, PASSWORD);
-  while (WiFi.status() != WL_CONNECTED && recount < 20){
-    delay(500);
-    display.println(F("Waiting"));
-    recount++;
-    display.display();
-    display.clearDisplay();
-    display.setCursor(0, 0);
-  }
-  if(WiFi.status() == WL_CONNECTED){
-    display.println(F("Time accquired, killing WiFi")); //Lowkey killed the code too 
-    WiFi.disconnect(true); 
-    WiFi.mode(WIFI_OFF);
-  }
-  else{
-    display.println(F("Offline Mode"));
-    WiFi.disconnect(true); 
-    WiFi.mode(WIFI_OFF);
-  }
-  configTime(gmtoffset, daylightoffset, ntpserver);*/
+  TaskHandle_t xHandle = NULL;
+  xTaskCreatePinnedToCore(networkmanager,"WiFiCheck",10000,NULL,0,&xHandle,0);
+  wifirequest = true;
   display.println(F("ESP Walkman V1"));
   display.display();
-  delay(750);
 }
 
-void timekeeper();
-void trackselector();
-void playersettings();
-void populatetracklist();
-//void datetime();
-
 void homescreen() {
+  struct tm timeinfo;
   if(digitalRead(downbutton) == HIGH){
     while(digitalRead(downbutton) == HIGH);
     menucounter = !menucounter;
@@ -93,8 +79,13 @@ void homescreen() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.println(F("WiFi Stack Disabled"));
+  display.setCursor(2,0);
+  if(getLocalTime(&timeinfo,0)){
+    display.printf("Time:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+  }
+  else{
+    display.println("Time Syncing");
+  }
   if(menucounter == 0){
   display.fillCircle(4, 18, 2, WHITE);
   display.setCursor(10,15);
@@ -148,20 +139,8 @@ void updatescreen() {
     display.fillRect(x, y, barwidth, height, WHITE);
 
   }
-
   display.display();
- 
 }
-
-/*void datetime() {
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    display.println(F("Time not set"));
-  } else{
-    display.printf("%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-  }
-
-}*/
 
 void paused() {}
 
@@ -254,8 +233,32 @@ void playersettings(){
   }
   }
 
-  
-
+void networkmanager(void * parameter){
+for(;;) {
+  if(wifirequest == true){
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    int recount = 0;
+    while (WiFi.status() != WL_CONNECTED && recount < 10){
+    Serial.println(".");
+    vTaskDelay(xDelay);
+    recount++;
+    }
+Serial.println("WiFi Connected");
+configTime(gmtoffset, daylightoffset, ntpserver);
+struct tm timeinfo;
+if(getLocalTime(&timeinfo)){
+  Serial.println("Time Synced");
+}
+else{
+  Serial.println("Not Connected");
+}
+wifirequest = false;
+WiFi.disconnect(true);
+WiFi.mode(WIFI_OFF);
+  }
+  vTaskDelay(100 / portTICK_PERIOD_MS);
+ }
+}
 
 void loop() {
   switch(playerstate){

@@ -15,6 +15,8 @@ int downbutton = 13;
 int TotalTime = 195;
 int PassedTime = 0;
 int menucounter = 0;
+int settingscounter = 0;
+String tracknumber[50];
 int trackselectindex = 0;
 unsigned long lastcheck = 0;
 unsigned long screenupdate = 0;
@@ -214,13 +216,35 @@ void trackselector() {
 }
 
 void playersettings(){
+    if(digitalRead(downbutton) == HIGH){
+    while(digitalRead(downbutton) == HIGH);
+    settingscounter = !settingscounter;
+  }
   display.clearDisplay();
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.println(F("Placeholder"));
+  display.println(F("Settings"));
+  if(settingscounter == 0){
+  display.fillCircle(4, 18, 2, WHITE);
+  display.setCursor(10,15);
+  display.println(F("Bluetooth"));
+  display.drawCircle(4, 27, 2, WHITE);
+  display.setCursor(10, 24);
+  display.println(F("WiFi"));
   display.display();
-}
+  } 
+  else {
+  display.drawCircle(4, 18, 2, WHITE);
+  display.setCursor(10,15);
+  display.println(F("Bluetooth"));
+  display.fillCircle(4, 27, 2, WHITE);
+  display.setCursor(10, 24);
+  display.println(F("WiFi"));
+  display.display();
+  }
+  }
+
 
 void loop() {
   switch(playerstate){

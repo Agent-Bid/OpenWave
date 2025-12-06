@@ -16,7 +16,8 @@ int TotalTime = 195;
 int PassedTime = 0;
 int menucounter = 0;
 int settingscounter = 0;
-String tracknumber[50];
+int tracksfound = 0;
+String tracklist[50];
 int trackselectindex = 0;
 unsigned long lastcheck = 0;
 unsigned long screenupdate = 0;
@@ -81,6 +82,7 @@ void setup() {
 void timekeeper();
 void trackselector();
 void playersettings();
+void populatetracklist();
 //void datetime();
 
 void homescreen() {
@@ -179,40 +181,47 @@ void timekeeper() {
   }
 
 void trackselector() {
-  int count = 0;
+  display.clearDisplay();
+  display.setCursor(0, 0); 
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.println("Your Tracks: ");
+  display.setCursor(0,15);
+ for(int x = 0; x < tracksfound; x++){
+   String displayname = tracklist[x];
+   if(displayname.length() > 20){
+    displayname = displayname.substring(0, 17) + "...";
+   }
+   display.println(displayname);
+ }
+ display.display();
+}
+
+void populatetracklist(){
+  tracksfound = 0;
   File root = SD.open("/");
-  if(!root){
-    display.println(F("SD Card Error"));
+  if (!root) {
+    display.println(F("SD Error"));
     display.display();
     return;
-  }
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  display.println(F("Your Tracks: "));
+ }
   root.rewindDirectory();
   while (true){
     File entry = root.openNextFile();
     if(!entry){
       break;
     }
-   if(entry.isDirectory()){
-    entry.close();
-    continue;
-   }
-  String name = entry.name();
-  if (name.length() > 20){
-    name = name.substring(0, 17) + "...";
+    if(entry.isDirectory()){
+      entry.close();
+      continue;
+    }
+    tracklist[tracksfound] = entry.name();
+    tracksfound ++;
+    if(tracksfound > 50){
+      break;
+    }
   }
-  display.setTextSize(1);
-  display.println(name);
-  entry.close();
-  count++;
-  if (count >= 5){
-    break;
-   }
-  }
-  display.display();
+  root.close();
 }
 
 void playersettings(){
@@ -245,6 +254,8 @@ void playersettings(){
   }
   }
 
+  
+
 
 void loop() {
   switch(playerstate){
@@ -253,6 +264,7 @@ void loop() {
     if(digitalRead(selectbutton) == HIGH && menucounter == 0){
       while(digitalRead(selectbutton) == HIGH);
       delay(100);
+      populatetracklist();
       playerstate = tracks;
       break;
     }
@@ -332,6 +344,7 @@ void loop() {
       break;
   }
 }
+
 
 
 

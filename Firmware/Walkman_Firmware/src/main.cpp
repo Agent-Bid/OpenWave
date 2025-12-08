@@ -24,9 +24,15 @@ int menucounter = 0;
 int settingscounter = 0;
 int tracksfound = 0;
 int trackselectindex = 0;
+int buttondelay = 150;
+int lastselectstate = LOW;
+int lastbackstate = LOW;
+int lastpausestate = LOW;
+int lastdownstate = LOW;
 bool wifirequest;
 String tracklist[50];
 unsigned long lastcheck = 0;
+unsigned long lastbuttontime = 0;
 unsigned long screenupdate = 0;
 const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
@@ -55,7 +61,7 @@ void setup() {
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
   display.println(F("Testing SD Card"));
-  if(SD.begin(5)) {
+  if(SD.begin(5, SPI, 4000000)) {
     display.println(F("SD card found"));
   }
   else {
@@ -64,7 +70,7 @@ void setup() {
     for(;;);
   }
   TaskHandle_t xHandle = NULL;
-  xTaskCreatePinnedToCore(networkmanager,"WiFiCheck",10000,NULL,0,&xHandle,0);
+  xTaskCreatePinnedToCore(networkmanager,"WiFiCheck",4000,NULL,0,&xHandle,0);
   wifirequest = true;
   display.println(F("ESP Walkman V1"));
   display.display();
@@ -72,10 +78,6 @@ void setup() {
 
 void homescreen() {
   struct tm timeinfo;
-  if(digitalRead(downbutton) == HIGH){
-    while(digitalRead(downbutton) == HIGH);
-    menucounter = !menucounter;
-  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -204,10 +206,6 @@ void populatetracklist(){
 }
 
 void playersettings(){
-    if(digitalRead(downbutton) == HIGH){
-    while(digitalRead(downbutton) == HIGH);
-    settingscounter = !settingscounter;
-  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -255,88 +253,98 @@ else{
 wifirequest = false;
 WiFi.disconnect(true);
 WiFi.mode(WIFI_OFF);
+Serial.print("WiFi Task high water mark : ");
+Serial.println(uxTaskGetStackHighWaterMark(NULL));
   }
   vTaskDelay(100 / portTICK_PERIOD_MS);
  }
 }
 
 void loop() {
+  int currentselectstate = digitalRead(selectbutton);
+  int currentbackstate = digitalRead(backbutton);
+  int currentdownstate = digitalRead(downbutton);
+  int currentpausestate = digitalRead(pausebutton);
   switch(playerstate){
+
     case home:
     homescreen();
-    if(digitalRead(selectbutton) == HIGH && menucounter == 0){
-      while(digitalRead(selectbutton) == HIGH);
-      delay(100);
-      populatetracklist();
-      playerstate = tracks;
+    if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)) {
+      menucounter = !menucounter;
       break;
     }
-    else if(digitalRead(selectbutton) == HIGH && menucounter == 1){
-      while(digitalRead(selectbutton) == HIGH);
-      delay(100);
-      playerstate = settingsmenu;
-      break;
-    }
+    if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay) && menucounter == 0){
+       populatetracklist();
+       playerstate = tracks;
+       lastbuttontime = millis();
+       break;
+     }
+      else if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay) && menucounter == 1){
+       playerstate = settingsmenu;
+       lastbuttontime = millis();
+       break;
+      }
     else{
       break;
     }
+
     case tracks:
     trackselector();
-    if(digitalRead(selectbutton) == HIGH){
-      while(digitalRead(selectbutton) == HIGH);
-      delay(100);
+    if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = song;
+      lastbuttontime = millis();
       break;
     }
-    else if(digitalRead(backbutton) == HIGH){
-      while(digitalRead(backbutton) == HIGH);
-      delay(100);
+    else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = home;
+      lastbuttontime = millis();
       break;
     }
     else{
       break;
     }
+
     case song:
     timekeeper();
-    if(digitalRead(pausebutton) == HIGH){
-      while(digitalRead(pausebutton) == HIGH);
-      delay(100);
+    if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = stopped;
+      lastbuttontime = millis();
       break;
     }
-    else if(digitalRead(backbutton) == HIGH){
-      while(digitalRead(backbutton) == HIGH);
+    else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = tracks;
-      delay(100);
+      lastbuttontime = millis();
       break;
     }
     else{
       break;
     }
+
     case stopped:
     paused();
-    if(digitalRead(pausebutton) == HIGH){
-      while(digitalRead(pausebutton) == HIGH);
-        delay(100);
-        playerstate = song;
+    if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > 300)){
+      playerstate = song;
+      lastbuttontime = millis();
       break;
     }
-    else if(digitalRead(backbutton) == HIGH){
-      while(digitalRead(backbutton) == HIGH);
-        delay(100);
-        playerstate = tracks;
+    else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      playerstate = tracks;
+      lastbuttontime = millis();
       break;
     }
     else{
       break;
     }
+
     case settingsmenu:
     playersettings();
-    if(digitalRead(backbutton) == HIGH){
-     while(digitalRead(backbutton) == HIGH);
-     delay(100);
+    if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      settingscounter = !settingscounter;
+      break;
+    }
+    if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
      playerstate = home;
+     lastbuttontime = millis();
      break;
     }
     else{
@@ -346,6 +354,11 @@ void loop() {
       playerstate = home;
       break;
   }
+
+  lastselectstate = currentselectstate;
+  lastbackstate = currentbackstate;
+  lastdownstate = currentdownstate;
+  lastpausestate = currentpausestate;
 }
 
 

@@ -7,8 +7,6 @@
 #include <secrets.h>
 #include <WiFi.h>
 #include <time.h>
-#include <Fonts/FreeSansBold9pt7b.h>
-#include <Fonts/FreeMono9pt7b.h>
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64
 
@@ -29,6 +27,9 @@ int lastselectstate = LOW;
 int lastbackstate = LOW;
 int lastpausestate = LOW;
 int lastdownstate = LOW;
+int menucursor = 0;
+int menustartindex = 0;
+int tracksperscreen = 5;
 bool wifirequest;
 String tracklist[50];
 unsigned long lastcheck = 0;
@@ -67,7 +68,7 @@ void setup() {
   else {
     display.println(F("SD card not found"));
     display.display();
-    for(;;);
+    //for(;;);
   }
   TaskHandle_t xHandle = NULL;
   xTaskCreatePinnedToCore(networkmanager,"WiFiCheck",4000,NULL,0,&xHandle,0);
@@ -162,19 +163,33 @@ void timekeeper() {
   }
 
 void trackselector() {
+  static char buffer[25];
+  int y = 15;
   display.clearDisplay();
   display.setCursor(0, 0); 
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.println("Your Tracks: ");
   display.setCursor(0,15);
- for(int x = 0; x < tracksfound; x++){
-   String displayname = tracklist[x];
-   if(displayname.length() > 20){
-    displayname = displayname.substring(0, 17) + "...";
+  for(int x = menustartindex; x < (tracksperscreen + menustartindex) ; x++){
+   if(x >= tracksfound){break;}
+   display.setCursor(0, y);
+   if(x == menucursor){
+    display.print(">");
    }
-   display.println(displayname);
- }
+   else{
+    display.print(" ");
+   }
+   tracklist[x].toCharArray(buffer, 20);
+   if(tracklist[x].length() > 18){
+    buffer[15] = '.';
+    buffer[16] = '.';
+    buffer[17] = '.';
+    buffer[18] = '\0';
+   }
+   display.println(buffer);
+   y += 10;
+  }
  display.display();
 }
 
@@ -253,7 +268,7 @@ else{
 wifirequest = false;
 WiFi.disconnect(true);
 WiFi.mode(WIFI_OFF);
-Serial.print("WiFi Task high water mark : ");
+Serial.print("water mark : ");
 Serial.println(uxTaskGetStackHighWaterMark(NULL));
   }
   vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -290,16 +305,29 @@ void loop() {
 
     case tracks:
     trackselector();
-    if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
-      playerstate = song;
+    if(lastdownstate == LOW && currentdownstate == HIGH && (millis() - lastbuttontime) >  buttondelay){
+      menucursor++;
+      if(menucursor >= tracksfound){
+        menucursor = 0;
+        menustartindex = 0;
+      }
+      else if(menucursor >= (tracksperscreen + menustartindex)){
+        menustartindex++;
+      }
       lastbuttontime = millis();
       break;
     }
+    if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      playerstate = song;
+      trackselectindex = menucursor;
+      lastbuttontime = millis();
+      break;
+     }
     else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = home;
       lastbuttontime = millis();
       break;
-    }
+     }
     else{
       break;
     }

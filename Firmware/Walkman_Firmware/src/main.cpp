@@ -7,6 +7,7 @@
 #include <secrets.h>
 #include <WiFi.h>
 #include <time.h>
+#include <iostream>
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64
 
@@ -17,7 +18,7 @@ int backbutton = 26;
 int pausebutton = 27;
 int downbutton = 13;
 int TotalTime = 195;
-int PassedTime = 0;
+int PassedTime;
 int menucounter = 0;
 int settingscounter = 0;
 int tracksfound = 0;
@@ -26,10 +27,11 @@ int buttondelay = 150;
 int lastselectstate = LOW;
 int lastbackstate = LOW;
 int lastpausestate = LOW;
-int lastdownstate = LOW;
+int lastdownstate = LOW;  
 int menucursor = 0;
 int menustartindex = 0;
 int tracksperscreen = 5;
+int currentsongduration = 0;
 bool wifirequest;
 String tracklist[50];
 unsigned long lastcheck = 0;
@@ -37,6 +39,7 @@ unsigned long lastbuttontime = 0;
 unsigned long screenupdate = 0;
 const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
+char currentsongname[30];
 File root;
 const char* ntpserver = "pool.ntp.org";
 const long gmtoffset = 19800;
@@ -44,9 +47,10 @@ const long daylightoffset = 0;
 enum {home, song, tracks, stopped, settingsmenu};
 
 void timekeeper();
-void trackselector();
+void trackmenu();
 void playersettings();
 void populatetracklist();
+void trackselector();
 void networkmanager(void * parameter);
 
 void setup() {
@@ -75,6 +79,7 @@ void setup() {
   wifirequest = true;
   display.println(F("ESP Walkman V1"));
   display.display();
+  delay(750);
 }
 
 void homescreen() {
@@ -115,9 +120,9 @@ void updatescreen() {
   display.setTextColor(WHITE);
   display.setCursor(0,0);
   display.println(F("Now Playing: "));
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setCursor(0,15);
-  display.println(F("Track 01"));
+  display.println(currentsongname);
 
   int currentminutes = PassedTime / 60;
   int currentseconds = PassedTime % 60;
@@ -130,11 +135,20 @@ void updatescreen() {
   if (currentseconds < 10) display.print("0");
   display.print(currentseconds);
 
-  display.print(F(" / 3:15"));
+  display.print(F(" / "));
+
+  int totalminutes = currentsongduration / 60;
+  int totalseconds = currentsongduration % 60;
+  if (totalminutes < 10) display.print("0");
+  display.print(totalminutes);
+  display.print(':');
+  if (totalseconds < 10) display.print("0");
+  display.print(totalseconds);
+
   int bars = 16;
   int spacing = 2;
   int barwidth = (128 - (bars * spacing)) / bars;
-
+  
   for(int i = 0; i < bars; i++) {
     int height = random(2, 20);
     int x = i * (barwidth + spacing);
@@ -150,7 +164,7 @@ void paused() {}
 void timekeeper() {
   if(millis() - lastcheck > 1000) {
     lastcheck = millis();
-    if (PassedTime < TotalTime) {
+    if (PassedTime < currentsongduration) {
       PassedTime++;
     } else {
       PassedTime = 0;
@@ -162,7 +176,7 @@ void timekeeper() {
    }
   }
 
-void trackselector() {
+void trackmenu() {
   static char buffer[25];
   int y = 15;
   display.clearDisplay();
@@ -197,8 +211,11 @@ void populatetracklist(){
   tracksfound = 0;
   File root = SD.open("/");
   if (!root) {
+    display.clearDisplay();
+    display.setCursor(0, 0);
     display.println(F("SD Error"));
     display.display();
+    //for(;;);
     return;
  }
   root.rewindDirectory();
@@ -275,6 +292,33 @@ Serial.println(uxTaskGetStackHighWaterMark(NULL));
  }
 }
 
+void trackselector() {
+  int i;
+  int loopcounter = 0;
+  File root = SD.open("/");
+  root.rewindDirectory();
+  while(true){
+    File current = root.openNextFile();
+    if(!current){
+      break;
+    }
+    if(current.isDirectory()){
+      current.close();
+      continue;
+    }
+    if(loopcounter == trackselectindex){
+      strncpy(currentsongname, current.name(), 18);
+      currentsongname[18] = '\0';
+      currentsongduration = current.size() / 16000;
+      current.close();
+      break;
+    }
+    loopcounter++;
+    current.close();
+  }
+  root.close();
+}
+
 void loop() {
   int currentselectstate = digitalRead(selectbutton);
   int currentbackstate = digitalRead(backbutton);
@@ -304,7 +348,7 @@ void loop() {
     }
 
     case tracks:
-    trackselector();
+    trackmenu();
     if(lastdownstate == LOW && currentdownstate == HIGH && (millis() - lastbuttontime) >  buttondelay){
       menucursor++;
       if(menucursor >= tracksfound){
@@ -320,6 +364,8 @@ void loop() {
     if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       playerstate = song;
       trackselectindex = menucursor;
+      trackselector();
+      PassedTime = 0;
       lastbuttontime = millis();
       break;
      }

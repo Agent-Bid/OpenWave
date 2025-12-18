@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_VS1053.h>
 #include <SPI.h>
 #include <SD.h>
 #include <secrets.h>
@@ -10,14 +11,17 @@
 #include <iostream>
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64
+#define SDCS 5
+#define XDCS 4
+#define CS 33
+#define RESET 15
+#define DREQ 35
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 int selectbutton = 25;
 int backbutton = 26;
 int pausebutton = 27;
 int downbutton = 13;
-int TotalTime = 195;
 int PassedTime;
 int menucounter = 0;
 int settingscounter = 0;
@@ -39,12 +43,15 @@ unsigned long lastbuttontime = 0;
 unsigned long screenupdate = 0;
 const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
-char currentsongname[30];
+char currentsongname[50];
 File root;
 const char* ntpserver = "pool.ntp.org";
 const long gmtoffset = 19800;
 const long daylightoffset = 0;
 enum {home, song, tracks, stopped, settingsmenu};
+
+Adafruit_VS1053_FilePlayer walkman = Adafruit_VS1053_FilePlayer(RESET, CS, XDCS, DREQ, SDCS);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void timekeeper();
 void trackmenu();
@@ -61,10 +68,23 @@ void setup() {
   }
   pinMode(selectbutton, INPUT);
   pinMode(backbutton, INPUT);
+  pinMode(downbutton, INPUT);
+  pinMode(pausebutton, INPUT);
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
+  display.println(F("Testing Audio Systems"));
+  if(!walkman.begin()){
+    display.println(F("Audio Systems Malfunctioning"));
+    display.display();
+    for(;;);
+  }
+  else{
+    display.println(F("Audio Systems Functional"));
+  }
+  walkman.setVolume(20, 20);
+  walkman.useInterrupt(DREQ);
   display.println(F("Testing SD Card"));
   if(SD.begin(5, SPI, 4000000)) {
     display.println(F("SD card found"));
@@ -122,7 +142,7 @@ void updatescreen() {
   display.println(F("Now Playing: "));
   display.setTextSize(1);
   display.setCursor(0,15);
-  display.println(currentsongname);
+  display.println(currentsongname + 1);
 
   int currentminutes = PassedTime / 60;
   int currentseconds = PassedTime % 60;
@@ -139,7 +159,7 @@ void updatescreen() {
 
   int totalminutes = currentsongduration / 60;
   int totalseconds = currentsongduration % 60;
-  if (totalminutes < 10) display.print("0");
+  //if (totalminutes < 10) display.print("0");
   display.print(totalminutes);
   display.print(':');
   if (totalseconds < 10) display.print("0");
@@ -159,7 +179,8 @@ void updatescreen() {
   display.display();
 }
 
-void paused() {}
+void paused() {
+}
 
 void timekeeper() {
   if(millis() - lastcheck > 1000) {
@@ -230,7 +251,7 @@ void populatetracklist(){
     }
     tracklist[tracksfound] = entry.name();
     tracksfound ++;
-    if(tracksfound > 50){
+    if(tracksfound >= 50){
       break;
     }
   }
@@ -293,8 +314,10 @@ Serial.println(uxTaskGetStackHighWaterMark(NULL));
 }
 
 void trackselector() {
+  currentsongname[0] = '\0';
   int i;
   int loopcounter = 0;
+  walkman.stopPlaying();
   File root = SD.open("/");
   root.rewindDirectory();
   while(true){
@@ -305,18 +328,24 @@ void trackselector() {
     if(current.isDirectory()){
       current.close();
       continue;
-    }
+    } 
     if(loopcounter == trackselectindex){
-      strncpy(currentsongname, current.name(), 18);
-      currentsongname[18] = '\0';
+      strcpy(currentsongname, "/");
+      strncat(currentsongname, current.name(), 40);
+      currentsongname[40] = '\0';
       currentsongduration = current.size() / 16000;
       current.close();
+      //walkman.startPlayingFile(currentsongname);
+      //current.close();
       break;
     }
     loopcounter++;
     current.close();
   }
   root.close();
+  if(strlen(currentsongname) > 0){
+   walkman.startPlayingFile(currentsongname);
+  }
 }
 
 void loop() {
@@ -362,9 +391,9 @@ void loop() {
       break;
     }
     if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      trackselector();
       playerstate = song;
       trackselectindex = menucursor;
-      trackselector();
       PassedTime = 0;
       lastbuttontime = millis();
       break;
@@ -380,12 +409,22 @@ void loop() {
 
     case song:
     timekeeper();
-    if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+    if(playerstate == song && walkman.playingMusic == false){
+      trackselectindex++;
+      PassedTime = 0;
+      if(trackselectindex >= tracksfound){
+        trackselectindex = 0;
+      }
+      trackselector();
+    }
+    else if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      walkman.pausePlaying(true);
       playerstate = stopped;
       lastbuttontime = millis();
       break;
     }
     else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      walkman.pausePlaying(true);
       playerstate = tracks;
       lastbuttontime = millis();
       break;
@@ -396,12 +435,14 @@ void loop() {
 
     case stopped:
     paused();
-    if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > 300)){
+    if(lastpausestate == LOW && currentpausestate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      walkman.pausePlaying(false);
       playerstate = song;
       lastbuttontime = millis();
       break;
     }
     else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      walkman.pausePlaying(true);
       playerstate = tracks;
       lastbuttontime = millis();
       break;

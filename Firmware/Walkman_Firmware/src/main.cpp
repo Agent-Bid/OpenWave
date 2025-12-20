@@ -17,7 +17,6 @@
 #define RESET 15
 #define DREQ 35
 
-
 int selectbutton = 25;
 int backbutton = 26;
 int pausebutton = 27;
@@ -83,7 +82,7 @@ void setup() {
   else{
     display.println(F("Audio Systems Functional"));
   }
-  walkman.setVolume(20, 20);
+  walkman.setVolume(10, 10);
   //walkman.useInterrupt(DREQ);
   display.println(F("Testing SD Card"));
   if(SD.begin(5, SPI, 4000000)) {
@@ -99,7 +98,6 @@ void setup() {
   wifirequest = true;
   display.println(F("ESP Walkman V1"));
   display.display();
-  delay(750);
 }
 
 void homescreen() {
@@ -431,6 +429,13 @@ void loop() {
       lastbuttontime = millis();
       break;
     }
+    else if(lastdownstate == LOW && currentdownstate == HIGH &&((millis() - lastbuttontime) > buttondelay)){
+      trackselectindex++;
+      PassedTime = 0;
+      trackselector();
+      lastbuttontime = millis();
+      break;
+    }
     else{
       break;
     }
@@ -446,6 +451,13 @@ void loop() {
     else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       walkman.pausePlaying(true);
       playerstate = tracks;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      trackselectindex++;
+      trackselector();
+      playerstate = song;
       lastbuttontime = millis();
       break;
     }

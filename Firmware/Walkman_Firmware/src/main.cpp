@@ -37,13 +37,13 @@ int menustartindex = 0;
 int tracksperscreen = 5;
 int currentsongduration = 0;
 bool wifirequest;
-String tracklist[50];
+String tracklist[200];
 unsigned long lastcheck = 0;
 unsigned long lastbuttontime = 0;
 unsigned long screenupdate = 0;
 const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
-char currentsongname[50];
+char currentsongname[200];
 File root;
 const char* ntpserver = "pool.ntp.org";
 const long gmtoffset = 19800;
@@ -84,7 +84,7 @@ void setup() {
     display.println(F("Audio Systems Functional"));
   }
   walkman.setVolume(20, 20);
-  walkman.useInterrupt(DREQ);
+  //walkman.useInterrupt(DREQ);
   display.println(F("Testing SD Card"));
   if(SD.begin(5, SPI, 4000000)) {
     display.println(F("SD card found"));
@@ -331,8 +331,8 @@ void trackselector() {
     } 
     if(loopcounter == trackselectindex){
       strcpy(currentsongname, "/");
-      strncat(currentsongname, current.name(), 40);
-      currentsongname[40] = '\0';
+      strncat(currentsongname, current.name(), 100);
+      currentsongname[100] = '\0';
       currentsongduration = current.size() / 16000;
       current.close();
       //walkman.startPlayingFile(currentsongname);
@@ -344,6 +344,7 @@ void trackselector() {
   }
   root.close();
   if(strlen(currentsongname) > 0){
+    walkman.softReset();
    walkman.startPlayingFile(currentsongname);
   }
 }
@@ -391,9 +392,9 @@ void loop() {
       break;
     }
     if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      trackselectindex = menucursor;
       trackselector();
       playerstate = song;
-      trackselectindex = menucursor;
       PassedTime = 0;
       lastbuttontime = millis();
       break;
@@ -408,6 +409,7 @@ void loop() {
     }
 
     case song:
+    walkman.feedBuffer();
     timekeeper();
     if(playerstate == song && walkman.playingMusic == false){
       trackselectindex++;
@@ -475,7 +477,3 @@ void loop() {
   lastdownstate = currentdownstate;
   lastpausestate = currentpausestate;
 }
-
-
-
-

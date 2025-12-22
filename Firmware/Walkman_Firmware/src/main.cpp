@@ -9,6 +9,8 @@
 #include <WiFi.h>
 #include <time.h>
 #include <iostream>
+#include <Preferences.h>
+
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64
 #define SDCS 5
@@ -35,6 +37,11 @@ int menucursor = 0;
 int menustartindex = 0;
 int tracksperscreen = 5;
 int currentsongduration = 0;
+int eqmenuindex = 0;
+int bassamp = 15; // Default Sound Settings
+int trebleamp = 6; // Default Sound Settings
+int bassfreq = 12; //Default Sound Settings
+int treblefreq = 10; //Default Sound Settigs
 bool wifirequest;
 String tracklist[200];
 unsigned long lastcheck = 0;
@@ -47,7 +54,7 @@ File root;
 const char* ntpserver = "pool.ntp.org";
 const long gmtoffset = 19800;
 const long daylightoffset = 0;
-enum {home, song, tracks, stopped, settingsmenu};
+enum {home, song, tracks, stopped, settingsmenu, equalizermenu};
 
 Adafruit_VS1053_FilePlayer walkman = Adafruit_VS1053_FilePlayer(RESET, CS, XDCS, DREQ, SDCS);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -57,6 +64,8 @@ void trackmenu();
 void playersettings();
 void populatetracklist();
 void trackselector();
+void equalizer();
+void equalizerfunc();
 void networkmanager(void * parameter);
 
 void setup() {
@@ -269,15 +278,33 @@ void playersettings(){
   display.drawCircle(4, 27, 2, WHITE);
   display.setCursor(10, 24);
   display.println(F("WiFi"));
+  display.drawCircle(4, 36, 2, WHITE);
+  display.setCursor(10, 33);
+  display.println("Equalizer");
   display.display();
   } 
-  else {
+  else if(settingscounter == 1){
   display.drawCircle(4, 18, 2, WHITE);
   display.setCursor(10,15);
   display.println(F("Bluetooth"));
   display.fillCircle(4, 27, 2, WHITE);
   display.setCursor(10, 24);
   display.println(F("WiFi"));
+  display.drawCircle(4, 36, 2, WHITE);
+  display.setCursor(10, 33);
+  display.println("Equalizer");
+  display.display();
+  }
+  else{
+  display.drawCircle(4, 18, 2, WHITE);
+  display.setCursor(10,15);
+  display.println(F("Bluetooth"));
+  display.drawCircle(4, 27, 2, WHITE);
+  display.setCursor(10, 24);
+  display.println(F("WiFi"));
+  display.fillCircle(4, 36, 2, WHITE);
+  display.setCursor(10, 33);
+  display.println("Equalizer");
   display.display();
   }
   }
@@ -343,8 +370,59 @@ void trackselector() {
   root.close();
   if(strlen(currentsongname) > 0){
     walkman.softReset();
-   walkman.startPlayingFile(currentsongname);
+    equalizerfunc();
+    walkman.startPlayingFile(currentsongname);
   }
+}
+
+void equalizerfunc(){
+  if(bassamp > 15 || bassamp < 0){
+    bassamp = 0;
+  }
+
+  if(trebleamp > 15 || trebleamp < 0){
+    trebleamp = 0;
+  }
+
+  uint16_t eqstats = ((trebleamp & 0xF) << 12 | (treblefreq & 0xF) << 8 | (bassamp & 0xF) << 4 | (bassfreq & 0xF));
+  walkman.sciWrite(2, eqstats);
+}
+
+void equalizer(){
+  
+  if(eqmenuindex == 0){
+   display.clearDisplay();
+   display.setCursor(0,0);
+   display.println(F("Equalizer"));
+   display.fillCircle(4, 18, 2, WHITE);
+   display.setCursor(10,15);
+   display.println(F("Bass: "));
+   display.setCursor(40, 15);
+   display.print(bassamp);
+   display.drawCircle(4, 27, 2, WHITE);
+   display.setCursor(10, 24);
+   display.println(F("Treble: "));
+   display.setCursor(53, 24);
+   display.print(trebleamp);
+   display.display();
+  } 
+  else if(eqmenuindex == 1) {
+   display.clearDisplay();
+   display.setCursor(0,0);
+   display.println(F("Equalizer"));
+   display.drawCircle(4, 18, 2, WHITE);
+   display.setCursor(10,15);
+   display.println(F("Bass: "));
+   display.setCursor(40, 15);
+   display.print(bassamp);
+   display.fillCircle(4, 27, 2, WHITE);
+   display.setCursor(10, 24);
+   display.println(F("Treble: "));
+   display.setCursor(53, 24);
+   display.print(trebleamp);
+   display.display();
+  }
+  equalizerfunc();
 }
 
 void loop() {
@@ -468,10 +546,19 @@ void loop() {
     case settingsmenu:
     playersettings();
     if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
-      settingscounter = !settingscounter;
+      settingscounter++;
+      if(settingscounter > 2){
+      settingscounter = 0;
+    }
+      lastbuttontime = millis();
       break;
     }
-    if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+    else if(lastselectstate == LOW && currentselectstate == HIGH && settingscounter == 2 && ((millis() - lastbuttontime) > buttondelay)){
+      playerstate = equalizermenu;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
      playerstate = home;
      lastbuttontime = millis();
      break;
@@ -479,8 +566,46 @@ void loop() {
     else{
       break;
     }
+
+    case equalizermenu:
+    equalizer();
+    if(eqmenuindex >= 2){ eqmenuindex = 0; }
+
+    if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      eqmenuindex++;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 0 && currentselectstate == HIGH && lastselectstate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      bassamp++;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 0 && currentpausestate == HIGH && lastpausestate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      bassamp--;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 1 && currentselectstate == HIGH && lastselectstate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      trebleamp++;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 1 && currentpausestate == HIGH && lastpausestate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      trebleamp--;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(lastbackstate == LOW && currentbackstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
+      playerstate = settingsmenu;
+      break;
+    }
+    else{
+      break;
+    }
+
     default:
-      playerstate = home;
+      playerstate = home; 
       break;
   }
 

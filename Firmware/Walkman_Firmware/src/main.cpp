@@ -33,7 +33,6 @@ int lastselectstate = LOW;
 int lastbackstate = LOW;
 int lastpausestate = LOW;
 int lastdownstate = LOW;  
-int menucursor = 0;
 int menustartindex = 0;
 int tracksperscreen = 5;
 int currentsongduration = 0;
@@ -43,13 +42,14 @@ int trebleamp = 6; // Default Sound Settings
 int bassfreq = 12; //Default Sound Settings
 int treblefreq = 10; //Default Sound Settigs
 bool wifirequest;
-String tracklist[200];
 unsigned long lastcheck = 0;
 unsigned long lastbuttontime = 0;
 unsigned long screenupdate = 0;
 const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
 unsigned char playerstate;
 char currentsongname[200];
+char tracklist[50][30];
+char buffer[50];
 File root;
 const char* ntpserver = "pool.ntp.org";
 const long gmtoffset = 19800;
@@ -205,7 +205,7 @@ void timekeeper() {
   }
 
 void trackmenu() {
-  static char buffer[25];
+  //static char buffer[25];
   int y = 15;
   display.clearDisplay();
   display.setCursor(0, 0); 
@@ -216,14 +216,14 @@ void trackmenu() {
   for(int x = menustartindex; x < (tracksperscreen + menustartindex) ; x++){
    if(x >= tracksfound){break;}
    display.setCursor(0, y);
-   if(x == menucursor){
+   if(x == trackselectindex){
     display.print(">");
    }
    else{
     display.print(" ");
    }
-   tracklist[x].toCharArray(buffer, 20);
-   if(tracklist[x].length() > 18){
+   strcpy(buffer, tracklist[x]);
+   if(strlen(buffer) > 18){
     buffer[15] = '.';
     buffer[16] = '.';
     buffer[17] = '.';
@@ -256,11 +256,13 @@ void populatetracklist(){
       entry.close();
       continue;
     }
-    tracklist[tracksfound] = entry.name();
+    strncpy(tracklist[tracksfound], entry.name(), 29);
+    tracklist[tracksfound][29] = '\0';
     tracksfound ++;
     if(tracksfound >= 50){
       break;
     }
+    entry.close();
   }
   root.close();
 }
@@ -358,7 +360,7 @@ void trackselector() {
       strcpy(currentsongname, "/");
       strncat(currentsongname, current.name(), 100);
       currentsongname[100] = '\0';
-      currentsongduration = current.size() / 16000;
+      currentsongduration = current.size() / 32000;
       current.close();
       //walkman.startPlayingFile(currentsongname);
       //current.close();
@@ -376,8 +378,17 @@ void trackselector() {
 }
 
 void equalizerfunc(){
+  if(bassfreq > 15 || bassfreq < 0){
+    bassfreq = 0;
+  }
+  
+  
   if(bassamp > 15 || bassamp < 0){
     bassamp = 0;
+  }
+
+  if(treblefreq > 15 || treblefreq < 0){
+    treblefreq = 0;
   }
 
   if(trebleamp > 15 || trebleamp < 0){
@@ -396,14 +407,24 @@ void equalizer(){
    display.println(F("Equalizer"));
    display.fillCircle(4, 18, 2, WHITE);
    display.setCursor(10,15);
-   display.println(F("Bass: "));
-   display.setCursor(40, 15);
+   display.println(F("Bass Amp: "));
+   display.setCursor(62, 15);
    display.print(bassamp);
    display.drawCircle(4, 27, 2, WHITE);
    display.setCursor(10, 24);
-   display.println(F("Treble: "));
-   display.setCursor(53, 24);
+   display.println(F("Treble Amp: "));
+   display.setCursor(75, 24);
    display.print(trebleamp);
+   display.drawCircle(4, 36, 2, WHITE);
+   display.setCursor(10, 33);
+   display.println(F("Bass Frequency: "));
+   display.setCursor(98, 33);
+   display.print(bassfreq);
+   display.drawCircle(4, 45, 2, WHITE);
+   display.setCursor(10, 42);
+   display.println(F("Treble Frequency: "));
+   display.setCursor(110, 42);
+   display.print(treblefreq);
    display.display();
   } 
   else if(eqmenuindex == 1) {
@@ -412,14 +433,76 @@ void equalizer(){
    display.println(F("Equalizer"));
    display.drawCircle(4, 18, 2, WHITE);
    display.setCursor(10,15);
-   display.println(F("Bass: "));
-   display.setCursor(40, 15);
+   display.println(F("Bass Amp: "));
+   display.setCursor(62, 15);
    display.print(bassamp);
    display.fillCircle(4, 27, 2, WHITE);
    display.setCursor(10, 24);
-   display.println(F("Treble: "));
-   display.setCursor(53, 24);
+   display.println(F("Treble Amp: "));
+   display.setCursor(75, 24);
    display.print(trebleamp);
+   display.drawCircle(4, 36, 2, WHITE);
+   display.setCursor(10, 33);
+   display.println(F("Bass Frequency: "));
+   display.setCursor(98, 33);
+   display.print(bassfreq);
+   display.drawCircle(4, 45, 2, WHITE);
+   display.setCursor(10, 42);
+   display.println(F("Treble Frequency: "));
+   display.setCursor(110, 42);
+   display.print(treblefreq);
+   display.display();
+  }
+  else if(eqmenuindex == 2) {
+   display.clearDisplay();
+   display.setCursor(0,0);
+   display.println(F("Equalizer"));
+   display.drawCircle(4, 18, 2, WHITE);
+   display.setCursor(10,15);
+   display.println(F("Bass Amp: "));
+   display.setCursor(62, 15);
+   display.print(bassamp);
+   display.drawCircle(4, 27, 2, WHITE);
+   display.setCursor(10, 24);
+   display.println(F("Treble Amp: "));
+   display.setCursor(75, 24);
+   display.print(trebleamp);
+   display.fillCircle(4, 36, 2, WHITE);
+   display.setCursor(10, 33);
+   display.println(F("Bass Frequency: "));
+   display.setCursor(98, 33);
+   display.print(bassfreq);
+   display.drawCircle(4, 45, 2, WHITE);
+   display.setCursor(10, 42);
+   display.println(F("Treble Frequency: "));
+   display.setCursor(110, 42);
+   display.print(treblefreq);
+   display.display();
+  }
+  else if(eqmenuindex == 3){
+   display.clearDisplay();
+   display.setCursor(0,0);
+   display.println(F("Equalizer"));
+   display.drawCircle(4, 18, 2, WHITE);
+   display.setCursor(10,15);
+   display.println(F("Bass Amp: "));
+   display.setCursor(62, 15);
+   display.print(bassamp);
+   display.drawCircle(4, 27, 2, WHITE);
+   display.setCursor(10, 24);
+   display.println(F("Treble Amp: "));
+   display.setCursor(75, 24);
+   display.print(trebleamp);
+   display.drawCircle(4, 36, 2, WHITE);
+   display.setCursor(10, 33);
+   display.println(F("Bass Frequency: "));
+   display.setCursor(98, 33);
+   display.print(bassfreq);
+   display.fillCircle(4, 45, 2, WHITE);
+   display.setCursor(10, 42);
+   display.println(F("Treble Frequency: "));
+   display.setCursor(110, 42);
+   display.print(treblefreq);
    display.display();
   }
   equalizerfunc();
@@ -456,19 +539,19 @@ void loop() {
     case tracks:
     trackmenu();
     if(lastdownstate == LOW && currentdownstate == HIGH && (millis() - lastbuttontime) >  buttondelay){
-      menucursor++;
-      if(menucursor >= tracksfound){
-        menucursor = 0;
+      trackselectindex++;
+      if(trackselectindex >= tracksfound){
+        trackselectindex = 0;
         menustartindex = 0;
       }
-      else if(menucursor >= (tracksperscreen + menustartindex)){
+      else if(trackselectindex >= (tracksperscreen + menustartindex)){
         menustartindex++;
       }
       lastbuttontime = millis();
       break;
     }
     if(lastselectstate == LOW && currentselectstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
-      trackselectindex = menucursor;
+      trackselectindex;
       trackselector();
       playerstate = song;
       PassedTime = 0;
@@ -569,7 +652,7 @@ void loop() {
 
     case equalizermenu:
     equalizer();
-    if(eqmenuindex >= 2){ eqmenuindex = 0; }
+    if(eqmenuindex >= 4){ eqmenuindex = 0; }
 
     if(lastdownstate == LOW && currentdownstate == HIGH && ((millis() - lastbuttontime) > buttondelay)){
       eqmenuindex++;
@@ -593,6 +676,26 @@ void loop() {
     }
     else if(eqmenuindex == 1 && currentpausestate == HIGH && lastpausestate == LOW && ((millis() - lastbuttontime) > buttondelay)){
       trebleamp--;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 2 && currentselectstate == HIGH && lastselectstate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      bassfreq++;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 2 && currentpausestate == HIGH && lastpausestate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      bassfreq--;
+      lastbuttontime = millis();
+      break;
+    }
+    else if(eqmenuindex == 3 && currentselectstate == HIGH && lastselectstate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      treblefreq++;
+      lastbuttontime = millis();
+      break;
+    }
+     else if(eqmenuindex == 3 && currentpausestate == HIGH && lastpausestate == LOW && ((millis() - lastbuttontime) > buttondelay)){
+      treblefreq--;
       lastbuttontime = millis();
       break;
     }

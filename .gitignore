@@ -4,3 +4,12 @@
 **/.DS_Store
 **/Thumbs.db
 **/secrets.h
+*.lck
+*.kicad_prl
+*.kicad_pcb-bak
+*.sch-bak
+*-bak
+_autosave-*
+fp-info-cache
+*.zip
+iso_icon

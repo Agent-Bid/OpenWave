@@ -5,6 +5,7 @@
 #include <Adafruit_VS1053.h>
 #include <SPI.h>
 #include <SD.h>
+#include <symbols.h>
 #include <secrets.h>
 #include <WiFi.h>
 #include <time.h>
@@ -116,20 +117,27 @@ void homescreen() {
   display.setTextColor(WHITE);
   display.setCursor(2,0);
   if(getLocalTime(&timeinfo,0)){
-    display.printf("Time:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    display.printf("%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
   }
   else{
     display.println("Time Syncing");
   }
+  display.drawBitmap(110, 0, battery, 16, 8, WHITE);
   if(menucounter == 0){
-  display.fillCircle(4, 18, 2, WHITE);
+  /*display.fillCircle(4, 18, 2, WHITE);
   display.setCursor(10,15);
   display.println(F("View Library"));
   display.drawCircle(4, 27, 2, WHITE);
   display.setCursor(10, 24);
   display.println(F("Settings"));
+  display.display();*/
+  display.drawBitmap(35, 13, musicnote1, 32, 32, WHITE);
+  display.drawBitmap(60, 10, musicnote2, 32, 32, WHITE);
+  display.setCursor(25, 45);
+  display.setTextSize(2);
+  display.println(F("Tracks"));
   display.display();
-  } 
+  }
   else {
   display.drawCircle(4, 18, 2, WHITE);
   display.setCursor(10,15);

@@ -13,3 +13,6 @@ _autosave-*
 fp-info-cache
 *.zip
 iso_icon
+.cache/
+.clangd/
+compile_commands.json

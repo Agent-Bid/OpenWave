@@ -2,6 +2,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_VS1053.h>
 #include <Arduino.h>
+#include <PowerManagement.h>
 #include <Preferences.h>
 #include <SD.h>
 #include <SPI.h>
@@ -453,6 +454,7 @@ void equalizer() {
     display.drawCircle(4, 54, 2, WHITE);
     display.setCursor(10, 51);
     display.println(F("Volume: "));
+    display.setCursor(53, 51);
     display.print(rightchannelvol);
     display.display();
   } else if (eqmenuindex == 1) {
@@ -482,6 +484,7 @@ void equalizer() {
     display.drawCircle(4, 54, 2, WHITE);
     display.setCursor(10, 51);
     display.println(F("Volume: "));
+    display.setCursor(53, 51);
     display.print(rightchannelvol);
     display.display();
   } else if (eqmenuindex == 2) {
@@ -511,6 +514,7 @@ void equalizer() {
     display.drawCircle(4, 54, 2, WHITE);
     display.setCursor(10, 51);
     display.println(F("Volume: "));
+    display.setCursor(53, 51);
     display.print(rightchannelvol);
     display.display();
   } else if (eqmenuindex == 3) {
@@ -540,6 +544,7 @@ void equalizer() {
     display.drawCircle(4, 54, 2, WHITE);
     display.setCursor(10, 51);
     display.println(F("Volume: "));
+    display.setCursor(53, 51);
     display.print(rightchannelvol);
     display.display();
   } else if (eqmenuindex == 4) {
@@ -569,7 +574,7 @@ void equalizer() {
     display.fillCircle(4, 54, 2, WHITE);
     display.setCursor(10, 51);
     display.println(F("Volume: "));
-    display.setCursor(50, 51);
+    display.setCursor(53, 51);
     display.print(rightchannelvol);
     display.display();
   }
@@ -577,10 +582,17 @@ void equalizer() {
 }
 
 void loop() {
+
   int currentselectstate = digitalRead(selectbutton);
   int currentbackstate = digitalRead(backbutton);
   int currentdownstate = digitalRead(downbutton);
   int currentpausestate = digitalRead(pausebutton);
+
+  initpowermanager();
+  sleeptimereset();
+  sleeping();
+  wakefromsleep();
+
   switch (playerstate) {
 
   case home:

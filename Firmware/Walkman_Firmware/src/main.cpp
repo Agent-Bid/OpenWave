@@ -588,10 +588,7 @@ void loop() {
   int currentdownstate = digitalRead(downbutton);
   int currentpausestate = digitalRead(pausebutton);
 
-  initpowermanager();
-  sleeptimereset();
-  sleeping();
-  wakefromsleep();
+  powermanager();
 
   switch (playerstate) {
 

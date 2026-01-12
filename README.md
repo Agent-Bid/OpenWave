@@ -19,3 +19,12 @@ Uploading:
 1. Connect the ESP32 board via usb and run: `pio run --t upload`
 
 2. To monitor serial from the board: `pio device monitor`
+
+Hardware Used:
+All software tested on
+
+1. ESP32 Devkit V1.
+
+2. Adafruit VS1053b Breakout.
+
+3. SSD1306 OLED.

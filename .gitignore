@@ -16,3 +16,5 @@ iso_icon
 .cache/
 .clangd/
 compile_commands.json
+*.FCStd[0-9]*
+*.lock

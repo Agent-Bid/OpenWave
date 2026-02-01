@@ -70,10 +70,8 @@ void powermanager() {
     initpowermanager();
     sleeptimereset();
     sleeping();
-    wakefromsleep();
   } else if (manageractive == true) {
     sleeptimereset();
     sleeping();
-    wakefromsleep();
   }
 }

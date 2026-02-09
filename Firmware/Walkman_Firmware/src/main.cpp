@@ -129,13 +129,6 @@ void homescreen() {
   }
   display.drawBitmap(110, 0, battery, 16, 8, WHITE);
   if (menucounter == 0) {
-    /*display.fillCircle(4, 18, 2, WHITE);
-    display.setCursor(10,15);
-    display.println(F("View Library"));
-    display.drawCircle(4, 27, 2, WHITE);
-    display.setCursor(10, 24);
-    display.println(F("Settings"));
-    display.display();*/
     display.drawBitmap(35, 13, musicnote1, 32, 32, WHITE);
     display.drawBitmap(60, 10, musicnote2, 32, 32, WHITE);
     display.setCursor(25, 45);
@@ -179,7 +172,6 @@ void updatescreen() {
 
   int totalminutes = currentsongduration / 60;
   int totalseconds = currentsongduration % 60;
-  // if (totalminutes < 10) display.print("0");
   display.print(totalminutes);
   display.print(':');
   if (totalseconds < 10)
@@ -217,7 +209,6 @@ void timekeeper() {
 }
 
 void trackmenu() {
-  // static char buffer[25];
   int y = 15;
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -256,7 +247,6 @@ void populatetracklist() {
     display.setCursor(0, 0);
     display.println(F("SD Error"));
     display.display();
-    // for(;;);
     return;
   }
   root.rewindDirectory();

@@ -37,7 +37,7 @@ void sleeping() {
     if (isdrawn == false) {
       display.setCursor(25, 25);
       display.setTextSize(2);
-      display.print(F("Sleeping"));
+      //display.print(F("Sleeping"));
       display.display();
       isdrawn = true;
     }
@@ -47,7 +47,7 @@ void sleeping() {
     if (isdrawn == false) {
       display.setCursor(25, 25);
       display.setTextSize(2);
-      display.print(F("Sleeping"));
+      //display.print(F("Sleeping"));
       display.display();
       isdrawn = true;
     }

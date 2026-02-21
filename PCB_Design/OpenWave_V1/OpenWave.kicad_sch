@@ -16004,7 +16004,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS"
+		(property "Footprint" "GlobalFP:TS3315A"
 			(at 349.25 26.67 0)
 			(effects
 				(font
@@ -17479,7 +17479,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_THT:C_Axial_L5.1mm_D3.1mm_P12.50mm_Horizontal"
+		(property "Footprint" "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
 			(at 265.43 138.43 0)
 			(effects
 				(font
@@ -18753,7 +18753,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS"
+		(property "Footprint" "GlobalFP:TS3315A"
 			(at 300.99 26.67 0)
 			(effects
 				(font

@@ -8067,8 +8067,8 @@
 		(uuid "52771029-23ca-46e9-a74d-56fa5bac5ae7")
 	)
 	(no_connect
-		(at 62.23 91.44)
-		(uuid "6238dbb1-4138-4c67-9c05-461394237099")
+		(at 31.75 58.42)
+		(uuid "6f81b01a-b24e-4142-81bd-1bd39bc18a64")
 	)
 	(no_connect
 		(at 62.23 71.12)
@@ -10340,6 +10340,16 @@
 	)
 	(wire
 		(pts
+			(xy 62.23 91.44) (xy 82.55 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "79d54fb6-9d35-4442-a4a7-67909ea44ad5")
+	)
+	(wire
+		(pts
 			(xy 19.05 83.82) (xy 31.75 83.82)
 		)
 		(stroke
@@ -10587,16 +10597,6 @@
 			(type default)
 		)
 		(uuid "893b62c8-f5a8-4a39-a8b7-f88bf32fcdfb")
-	)
-	(wire
-		(pts
-			(xy 19.05 58.42) (xy 31.75 58.42)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "89c2a15b-9aba-42d1-a8df-2d6993c88b47")
 	)
 	(wire
 		(pts
@@ -12748,6 +12748,16 @@
 		)
 		(uuid "3e766cdc-cc4a-42fe-b35c-a53596e587af")
 	)
+	(label "Rotary1"
+		(at 74.93 91.44 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "44fbb6b7-f625-47d1-a468-ba7b98d8120e")
+	)
 	(label "Button4"
 		(at 21.59 88.9 0)
 		(effects
@@ -13395,16 +13405,6 @@
 			(justify left bottom)
 		)
 		(uuid "f769dafb-6fbb-4cd3-b1d8-7cd42aa4844a")
-	)
-	(label "Rotary1"
-		(at 21.59 58.42 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "f97b56b1-e0cd-43c6-a13f-ba85dd113352")
 	)
 	(label "GPIO1"
 		(at 219.71 74.93 0)

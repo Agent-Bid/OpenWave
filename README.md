@@ -11,7 +11,7 @@ This project uses [PlatformIO](https://platformio.org/) for firmware development
 * Or [PlatformIO IDE - VSCode](https://docs.platformio.org/en/latest/integration/ide/vscode.html)
 
 ### Building
-1. Navigate to the firmware directory: `cd Firmware/Walkman_Firmware`
+1. Navigate to the firmware directory: `cd Firmware/OpenWave_Firmware`
 2. Resolve dependencies and build project: `pio run`
 
 ### Uploading

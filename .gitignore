@@ -1,7 +1,6 @@
 .pio
 .pio/
 .vscode/
-Screenshots/
 *Gerbers/
 *3D_Files/
 **/.DS_Store

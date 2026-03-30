@@ -467,7 +467,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "WalkmanPCB_V1.kicad_pro",
+    "filename": "OpenWave.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -503,10 +503,10 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "Gerbers/",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "3D_Files/OpenWave.glb",
       "svg": "",
       "vrml": ""
     },

@@ -28,6 +28,11 @@ Custom 4 layer PCB designed in KiCad
 ![Screenshot 1](Screenshots/swappy-20260330-114124.png)
 ![Screenshot 2](Screenshots/swappy-20260330-114202.png)
 
+## Assembled Board
+![Assembled 1](Screenshots/1000180321.jpg)
+![Assembled 2](Screenshots/1000180322.jpg)
+![Assembled 3](Screenshots/1000180323.jpg)
+
 ## Licensing
 
 This is an open-source hardware project. To ensure all aspects of the design are properly protected and freely shareable, the project uses multiple licenses:
